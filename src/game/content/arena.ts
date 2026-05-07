@@ -26,10 +26,11 @@ export function generateArena(seed: number, difficulty: DifficultyPreset): Arena
     const terrain = generateTerrain(seed);
     const roadDecorations = generateRoadNetwork(random, terrain);
     const enemySpawns = generateEnemySpawns(random, playerSpawn, difficulty.enemyCount);
-    const obstacles = generateObstacles(random, playerSpawn, roadDecorations);
+    const sandbags = generateSandbagCover(enemySpawns);
+    const obstacles = generateObstacles(random, playerSpawn, roadDecorations, sandbags);
     const decorations = [
         ...roadDecorations,
-        ...generateStoryDecorations(random, obstacles, enemySpawns)
+        ...generateStoryDecorations(random, obstacles, sandbags)
     ];
 
     return {
@@ -146,7 +147,7 @@ function generateRoadNetwork(random: () => number, terrain: TerrainTileKind[][])
     });
 }
 
-function generateObstacles(random: () => number, playerSpawn: Point, roads: ArenaDecoration[]): ArenaObstacle[] {
+function generateObstacles(random: () => number, playerSpawn: Point, roads: ArenaDecoration[], sandbags: ArenaDecoration[]): ArenaObstacle[] {
     const obstacles: ArenaObstacle[] = [];
     const roadCells = new Set(roads.map((road) => worldGridKey(road.position)));
     const blockedRoads = new Set<string>();
@@ -173,6 +174,18 @@ function generateObstacles(random: () => number, playerSpawn: Point, roads: Aren
             role: 'roadblock',
             position: { ...road.position },
             size: { x: 58, y: 40 },
+            blocksVision: true,
+            blocksShots: true
+        });
+    }
+
+    for (const sandbag of sandbags) {
+        obstacles.push({
+            id: `sandbag-${obstacles.length}`,
+            kind: 'sandbag',
+            role: 'sandbag',
+            position: { ...sandbag.position },
+            size: { x: 20, y: 18 },
             blocksVision: true,
             blocksShots: true
         });
@@ -216,7 +229,7 @@ function generateObstacles(random: () => number, playerSpawn: Point, roads: Aren
     return obstacles;
 }
 
-function generateStoryDecorations(random: () => number, obstacles: ArenaObstacle[], enemySpawns: EnemySpawn[]): ArenaDecoration[] {
+function generateStoryDecorations(random: () => number, obstacles: ArenaObstacle[], sandbags: ArenaDecoration[]): ArenaDecoration[] {
     const decorations: ArenaDecoration[] = [];
 
     for (const obstacle of obstacles.filter((candidate) => candidate.role === 'oilSource')) {
@@ -231,19 +244,7 @@ function generateStoryDecorations(random: () => number, obstacles: ArenaObstacle
         });
     }
 
-    enemySpawns.slice(0, 4).forEach((enemy, enemyIndex) => {
-        [-1, 0, 1].forEach((offset, offsetIndex) => {
-            decorations.push({
-                id: `nest-${enemyIndex}-${offsetIndex}`,
-                kind: 'sandbag',
-                position: {
-                    x: enemy.position.x + offset * 34,
-                    y: enemy.position.y + 58
-                },
-                rotation: offset * 0.18
-            });
-        });
-    });
+    decorations.push(...sandbags);
 
     for (let index = 0; index < 26; index += 1) {
         decorations.push({
@@ -255,6 +256,26 @@ function generateStoryDecorations(random: () => number, obstacles: ArenaObstacle
     }
 
     return decorations;
+}
+
+function generateSandbagCover(enemySpawns: EnemySpawn[]): ArenaDecoration[] {
+    const sandbags: ArenaDecoration[] = [];
+
+    enemySpawns.slice(0, 4).forEach((enemy, enemyIndex) => {
+        [-1, 0, 1].forEach((offset, offsetIndex) => {
+            sandbags.push({
+                id: `nest-${enemyIndex}-${offsetIndex}`,
+                kind: 'sandbag',
+                position: {
+                    x: enemy.position.x + offset * 34,
+                    y: enemy.position.y + 58
+                },
+                rotation: offset * 0.18
+            });
+        });
+    });
+
+    return sandbags;
 }
 
 function generateEnemySpawns(random: () => number, playerSpawn: Point, count: number): EnemySpawn[] {

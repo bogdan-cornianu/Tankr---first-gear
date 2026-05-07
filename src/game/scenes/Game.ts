@@ -122,6 +122,9 @@ export class Game extends Scene
         }
 
         for (const decoration of this.state.arena.decorations) {
+            if (decoration.kind === 'sandbag') {
+                continue;
+            }
             const key = this.getDecorationAsset(decoration);
             const image = this.add.image(decoration.position.x, decoration.position.y, key).setRotation(decoration.rotation);
             if (decoration.kind === 'road') {
@@ -145,7 +148,9 @@ export class Game extends Scene
                     ? AssetKeys.barricade
                     : obstacle.kind === 'tree'
                         ? AssetKeys.tree
-                        : AssetKeys.barrel;
+                        : obstacle.kind === 'sandbag'
+                            ? AssetKeys.sandbag
+                            : AssetKeys.barrel;
             const sprite = this.obstacleGroup.create(obstacle.position.x, obstacle.position.y, key) as Phaser.Physics.Arcade.Sprite;
             sprite.setData('blocksShots', obstacle.blocksShots);
             sprite.setDisplaySize(obstacle.size.x, obstacle.size.y);
@@ -353,12 +358,17 @@ export class Game extends Scene
                 projectile.y + projectile.velocityY * (delta / 1000)
             );
 
+            if (this.projectileHitBlocker(projectile)) {
+                this.spawnPropImpactEffect(projectile.x, projectile.y);
+                projectile.destroy();
+                continue;
+            }
+
             if (this.time.now >= projectile.expiresAt ||
                 projectile.x < 0 ||
                 projectile.y < 0 ||
                 projectile.x > this.state.arena.width ||
-                projectile.y > this.state.arena.height ||
-                this.blockerRects.some((rect) => pointInRect(projectile, rect))) {
+                projectile.y > this.state.arena.height) {
                 projectile.destroy();
                 continue;
             }
@@ -369,6 +379,11 @@ export class Game extends Scene
                 this.checkProjectileAgainstPlayer(projectile);
             }
         }
+    }
+
+    private projectileHitBlocker (projectile: ProjectileSprite): boolean
+    {
+        return this.blockerRects.some((rect) => pointInRect(projectile, rect));
     }
 
     private checkProjectileAgainstEnemies (projectile: ProjectileSprite): void
@@ -536,6 +551,20 @@ export class Game extends Scene
             frameMs: 28,
             scale: 0.62,
             fadeMs: 130
+        });
+    }
+
+    private spawnPropImpactEffect (x: number, y: number): void
+    {
+        this.playEffectFrames(x, y, [
+            AssetKeys.explosion1,
+            AssetKeys.explosion4,
+            AssetKeys.explosionSmoke2,
+            AssetKeys.explosionSmoke5
+        ], {
+            frameMs: 24,
+            scale: 0.48,
+            fadeMs: 95
         });
     }
 

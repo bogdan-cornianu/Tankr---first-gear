@@ -210,6 +210,23 @@ describe('arena generation', () => {
         expect(oilSpills.some((oil) => barrels.some((barrel) => distanceBetween(oil.position, barrel.position) <= 70))).toBe(true);
         expect(arena.enemySpawns.some((enemy) => sandbags.filter((sandbag) => distanceBetween(sandbag.position, enemy.position) <= 110).length >= 2)).toBe(true);
     });
+
+    test('turns sandbag cover into blocking obstacles', () => {
+        const arena = generateArena(808, DIFFICULTY_PRESETS.medium);
+        const sandbagDecorations = arena.decorations.filter((decoration) => decoration.kind === 'sandbag');
+        const sandbagObstacles = arena.obstacles.filter((obstacle) => obstacle.kind === 'sandbag');
+
+        expect(sandbagObstacles.length).toBe(sandbagDecorations.length);
+        for (const sandbag of sandbagDecorations) {
+            const blocker = sandbagObstacles.find((obstacle) => distanceBetween(obstacle.position, sandbag.position) < 1);
+
+            expect(blocker).toBeDefined();
+            expect(blocker?.blocksVision).toBe(true);
+            expect(blocker?.blocksShots).toBe(true);
+            expect(blocker?.size.x).toBeGreaterThan(0);
+            expect(blocker?.size.y).toBeGreaterThan(0);
+        }
+    });
 });
 
 function gridKey(decoration: ArenaDecoration, tileSize: number): string {

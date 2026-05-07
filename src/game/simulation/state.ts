@@ -107,8 +107,8 @@ export type RoadTransitionVariant =
 
 export interface ArenaObstacle {
     id: string;
-    kind: 'crate' | 'barricade' | 'tree' | 'barrel';
-    role?: 'cover' | 'roadblock' | 'oilSource';
+    kind: 'crate' | 'barricade' | 'tree' | 'barrel' | 'sandbag';
+    role?: 'cover' | 'roadblock' | 'oilSource' | 'sandbag';
     position: Point;
     size: Point;
     blocksVision: boolean;
